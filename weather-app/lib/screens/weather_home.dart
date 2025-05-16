@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/model/weather_model.dart';
 import 'package:flutter_application_1/services/services.dart';
 import 'package:intl/intl.dart';
-import 'package:weather_app/Model/weather_model.dart';
-import 'package:weather_app/Services/services.dart';
 
 class WeatherHome extends StatefulWidget {
   const WeatherHome({super.key});
@@ -13,33 +11,40 @@ class WeatherHome extends StatefulWidget {
 }
 
 class _WeatherHomeState extends State<WeatherHome> {
-  late WeatherData weatherInfo;
+  WeatherData? weatherInfo;
   bool isLoading = false;
-  myWeather() {
-    isLoading = false;
-    WeatherServices().fetchWeather().then((value) {
-      setState(() {
-        weatherInfo = value;
-        isLoading = true;
-      });
-    });
-  }
+
+  // Replace these with your actual latitude, longitude and API key
+  final double latitude = 11.0189; // example: San Francisco lat
+  final double longitude = -76.1760; // example: San Francisco lon
+  final String apiKey = 'd3bb82e6846584ec26891c092a9f7b24';
 
   @override
   void initState() {
-    weatherInfo = WeatherData(
-      name: '',
-      temperature: Temperature(current: 0.0),
-      humidity: 0,
-      wind: Wind(speed: 0.0),
-      maxTemperature: 0,
-      minTemperature: 0,
-      pressure: 0,
-      seaLevel: 0,
-      weather: [],
-    );
-    myWeather();
     super.initState();
+    fetchWeatherData();
+  }
+
+  Future<void> fetchWeatherData() async {
+    setState(() {
+      isLoading = false;
+    });
+    final data = await WeatherServices().fetchWeather(
+      lat: latitude,
+      lon: longitude,
+      apiKey: apiKey,
+    );
+    if (data != null) {
+      setState(() {
+        weatherInfo = data;
+        isLoading = true;
+      });
+    } else {
+      // Handle failure case if needed
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -47,23 +52,19 @@ class _WeatherHomeState extends State<WeatherHome> {
     String formattedDate =
         DateFormat('EEEE d, MMMM yyyy').format(DateTime.now());
     String formattedTime = DateFormat('hh:mm a').format(DateTime.now());
+
     return Scaffold(
       backgroundColor: const Color(0xFF676BD0),
       body: Padding(
         padding: const EdgeInsets.all(15),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Center(
-              child: isLoading
-                  ? WeatherDetail(
-                      weather: weatherInfo,
-                      formattedDate: formattedDate,
-                      formattedTime: formattedTime,
-                    )
-                  : const CircularProgressIndicator(color: Colors.white,),
-            ),
-          ],
+        child: Center(
+          child: isLoading && weatherInfo != null
+              ? WeatherDetail(
+                  weather: weatherInfo!,
+                  formattedDate: formattedDate,
+                  formattedTime: formattedTime,
+                )
+              : const CircularProgressIndicator(color: Colors.white),
         ),
       ),
     );
@@ -74,6 +75,7 @@ class WeatherDetail extends StatelessWidget {
   final WeatherData weather;
   final String formattedDate;
   final String formattedTime;
+
   const WeatherDetail({
     super.key,
     required this.weather,
@@ -84,8 +86,8 @@ class WeatherDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // for current address name
         Text(
           weather.name,
           style: const TextStyle(
@@ -94,7 +96,6 @@ class WeatherDetail extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        // for current temperature of my location
         Text(
           "${weather.temperature.current.toStringAsFixed(2)}°C",
           style: const TextStyle(
@@ -103,7 +104,6 @@ class WeatherDetail extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        // fpr weather condition
         if (weather.weather.isNotEmpty)
           Text(
             weather.weather[0].main,
@@ -114,7 +114,6 @@ class WeatherDetail extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 30),
-        // for current date and time
         Text(
           formattedDate,
           style: const TextStyle(
@@ -142,7 +141,6 @@ class WeatherDetail extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 30),
-        // for more weather detail
         Container(
           height: 250,
           decoration: BoxDecoration(
@@ -157,87 +155,41 @@ class WeatherDetail extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.wind_power,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(height: 5),
-                        weatherInfoCard(
-                            title: "Wind", value: "${weather.wind.speed}km/h"),
-                      ],
+                    weatherInfoCard(
+                      icon: Icons.wind_power,
+                      title: "Wind",
+                      value: "${weather.wind.speed} km/h",
                     ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.sunny,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(height: 5),
-                        weatherInfoCard(
-                            title: "Max",
-                            value:
-                                "${weather.maxTemperature.toStringAsFixed(2)}°C"),
-                      ],
+                    weatherInfoCard(
+                      icon: Icons.sunny,
+                      title: "Max",
+                      value: "${weather.maxTemperature.toStringAsFixed(2)}°C",
                     ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.wind_power,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(height: 5),
-                        weatherInfoCard(
-                            title: "Min",
-                            value:
-                                "${weather.minTemperature.toStringAsFixed(2)}°C"),
-                      ],
+                    weatherInfoCard(
+                      icon: Icons.ac_unit,
+                      title: "Min",
+                      value: "${weather.minTemperature.toStringAsFixed(2)}°C",
                     ),
                   ],
                 ),
-                const Divider(),
+                const Divider(color: Colors.white),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.water_drop,
-                          color: Colors.amber,
-                        ),
-                        const SizedBox(height: 5),
-                        weatherInfoCard(
-                            title: "Humidity", value: "${weather.humidity}%"),
-                      ],
+                    weatherInfoCard(
+                      icon: Icons.water_drop,
+                      title: "Humidity",
+                      value: "${weather.humidity}%",
                     ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.air,
-                          color: Colors.amber,
-                        ),
-                        const SizedBox(height: 5),
-                        weatherInfoCard(
-                            title: "Pressure", value: "${weather.pressure}hPa"),
-                      ],
+                    weatherInfoCard(
+                      icon: Icons.air,
+                      title: "Pressure",
+                      value: "${weather.pressure} hPa",
                     ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.leaderboard,
-                          color: Colors.amber,
-                        ),
-                        const SizedBox(height: 5),
-                        weatherInfoCard(
-                            title: "Sea-Level", value: "${weather.seaLevel}m"),
-                      ],
+                    weatherInfoCard(
+                      icon: Icons.leaderboard,
+                      title: "Sea-Level",
+                      value: "${weather.seaLevel} m",
                     ),
                   ],
                 )
@@ -249,9 +201,15 @@ class WeatherDetail extends StatelessWidget {
     );
   }
 
-  Column weatherInfoCard({required String title, required String value}) {
+  Column weatherInfoCard({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
     return Column(
       children: [
+        Icon(icon, color: Colors.white),
+        const SizedBox(height: 5),
         Text(
           value,
           style: const TextStyle(
@@ -267,7 +225,7 @@ class WeatherDetail extends StatelessWidget {
             fontWeight: FontWeight.w500,
             fontSize: 16,
           ),
-        )
+        ),
       ],
     );
   }

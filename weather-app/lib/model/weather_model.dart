@@ -1,7 +1,6 @@
 class WeatherData {
   final String name;
   final Temperature temperature;
-
   final int humidity;
   final Wind wind;
   final double maxTemperature;
@@ -9,8 +8,6 @@ class WeatherData {
   final int pressure;
   final int seaLevel;
   final List<WeatherInfo> weather;
-  // i have alreadt create a mode her according to my requirement you can also create mode according to your requiremnet
-  // if you need like my model all the source code are is in description. you can follow we me.
 
   WeatherData({
     required this.name,
@@ -25,20 +22,19 @@ class WeatherData {
   });
 
   factory WeatherData.fromJson(Map<String, dynamic> json) {
+    final main = json['main'];
     return WeatherData(
       name: json['name'],
-     temperature: Temperature.fromJson(json['main']['temp']),
-      humidity: json['main']['humidity'],
+      temperature: Temperature.fromKelvin(main['temp']),
+      humidity: main['humidity'],
       wind: Wind.fromJson(json['wind']),
-      maxTemperature: (json['main']['temp_max'] - 273.15), // Kelvin to Celsius
-      minTemperature: (json['main']['temp_min'] - 273.15), // Kelvin to Celsius
-      pressure: json['main']['pressure'],
-      seaLevel: json['main']['sea_level'] ?? 0,
-      weather: List<WeatherInfo>.from(
-        json['weather'].map(
-          (weather) => WeatherInfo.fromJson(weather),
-        ),
-      ),
+      maxTemperature: (main['temp_max'] - 273.15),
+      minTemperature: (main['temp_min'] - 273.15),
+      pressure: main['pressure'],
+      seaLevel: main['sea_level'] ?? 0,
+      weather: (json['weather'] as List)
+          .map((w) => WeatherInfo.fromJson(w))
+          .toList(),
     );
   }
 }
@@ -46,14 +42,10 @@ class WeatherData {
 class WeatherInfo {
   final String main;
 
-  WeatherInfo({
-    required this.main,
-  });
+  WeatherInfo({required this.main});
 
   factory WeatherInfo.fromJson(Map<String, dynamic> json) {
-    return WeatherInfo(
-      main: json['main'],
-    );
+    return WeatherInfo(main: json['main']);
   }
 }
 
@@ -62,10 +54,8 @@ class Temperature {
 
   Temperature({required this.current});
 
-  factory Temperature.fromJson(dynamic json) {
-    return Temperature(
-      current: (json - 273.15), // Kelvin to Celsius
-    );
+  factory Temperature.fromKelvin(double kelvin) {
+    return Temperature(current: kelvin - 273.15);
   }
 }
 
@@ -75,6 +65,6 @@ class Wind {
   Wind({required this.speed});
 
   factory Wind.fromJson(Map<String, dynamic> json) {
-    return Wind(speed: json['speed']);
+    return Wind(speed: (json['speed'] as num).toDouble());
   }
 }

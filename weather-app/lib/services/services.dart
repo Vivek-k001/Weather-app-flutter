@@ -1,28 +1,28 @@
-
 import 'dart:convert';
-
 import 'package:flutter_application_1/model/weather_model.dart';
 import 'package:http/http.dart' as http;
 
-
 class WeatherServices {
-  fetchWeather() async {
-    final response = await http.get(
-      Uri.parse(
-          "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API key}"),
-    );
-    // now we can cange latitude and longitude and let's see how it perfrom.
+  // Replace {lat}, {lon}, and {API_KEY} with actual values or parameters
+  Future<WeatherData?> fetchWeather({
+    required double lat,
+    required double lon,
+    required String apiKey,
+  }) async {
+    final url =
+        "https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey";
+
     try {
+      final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        var json = jsonDecode(response.body);
+        final json = jsonDecode(response.body);
         return WeatherData.fromJson(json);
       } else {
-        throw Exception('Failed to load Weather data');
+        throw Exception('Failed to load weather data');
       }
     } catch (e) {
-      print(e.toString());
+      print('Error fetching weather: $e');
+      return null;
     }
   }
 }
-// replace the api key with your api key thay openWeathemap provide you
-// for your current location provide the longitude and latitude of your current location
